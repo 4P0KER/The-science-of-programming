@@ -22,7 +22,7 @@ Calculator/
 │ ├── PluginLoader.cpp
 │ ├── IOperation.h
 │ ├── main.cpp
-│ └── plugin_sources/ # Исходники плагинов
+├── plugin_sources/ # Исходники плагинов
 │ ├── CMakeLists.txt
 │ ├── sin_plugin.cpp
 │ ├── ln_plugin.cpp
