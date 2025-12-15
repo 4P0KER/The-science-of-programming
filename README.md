@@ -14,7 +14,7 @@ Calculator/
 │ ├── log.dll
 │ ├── pow.dll
 │ └── ...
-├── src/ # Исходный код
+├── src/ 
 │ ├── CMakeLists.txt
 │ ├── Calculator.h
 │ ├── Calculator.cpp
@@ -22,13 +22,13 @@ Calculator/
 │ ├── PluginLoader.cpp
 │ ├── IOperation.h
 │ ├── main.cpp
-├── plugin_sources/ # Исходники плагинов
+├── plugin_sources/ 
 │ ├── CMakeLists.txt
 │ ├── sin_plugin.cpp
 │ ├── ln_plugin.cpp
 │ ├── log_plugin.cpp
 │ └── pow_plugin.cpp
-├── include/ # Заголовочные файлы
+├── include/ 
 │ └── IOperation.h
 └── CMakeLists.txt
 ```
