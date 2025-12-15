@@ -41,24 +41,28 @@ Calculator/
 ## Сборка проекта
 
 ### Способ 1:
-
+```plaintext
 Откройте папку проекта в VS Code
 Установите расширение CMake Tools
 Нажмите Ctrl+Shift+P → CMake: Configure
 Нажмите Ctrl+Shift+P → CMake: Build
+```
 
 ### Способ 2:
 
+```plaintext
 cd Calculator
 mkdir build-mingw
 cd build-mingw
 cmake .. -G "MinGW Makefiles"
 make
+```
 
 ## Запуск приложения
 После сборки:
+```plaintext
 ./calc.exe
-
+```
 ## Архитектура
 Система интерфейсов (IOperation.h)
 Цель: Определение контракта для всех операций в системе.
