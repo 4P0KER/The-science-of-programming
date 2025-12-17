@@ -42,18 +42,28 @@ public:
         return it->second->execute(arguments);
     }
     
-    // Типобезопасное выполнение
+
     template<typename ResultType>
-    ResultType execute_as(const std::string& name,
-                          const std::map<std::string, std::any>& arguments = {}) {
-        std::any result = execute(name, arguments);
-        
+ResultType execute_as(const std::string& name,
+                      const std::map<std::string, std::any>& arguments = {}) {
+    std::any result = execute(name, arguments);
+    
+
+    if constexpr (std::is_void_v<ResultType>) {
         try {
-            return std::any_cast<ResultType>(result);
+            std::any_cast<VoidResult>(result);
         } catch (const std::bad_any_cast&) {
             throw std::runtime_error("Return type mismatch for command: " + name);
         }
+        return;
     }
+    
+    try {
+        return std::any_cast<ResultType>(result);
+    } catch (const std::bad_any_cast&) {
+        throw std::runtime_error("Return type mismatch for command: " + name);
+    }
+}
     
     bool has_command(const std::string& name) const {
         return commands_.find(name) != commands_.end();

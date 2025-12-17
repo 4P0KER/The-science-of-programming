@@ -24,6 +24,9 @@ public:
     virtual std::vector<std::string> get_parameter_names() const = 0;
 };
 
+// Специальная структура для void возвращаемого значения
+struct VoidResult {};
+
 // Обертка для методов класса с произвольной сигнатурой
 template<typename ClassType, typename ReturnType, typename... Args>
 class MethodWrapper : public ICommand {
@@ -45,36 +48,45 @@ private:
         return typeid(U).name();
     }
     
-    // Проверяет типы значений по умолчанию при создании обертки
-    template<size_t... Is>
-void validate_defaults_impl(std::index_sequence<Is...>) {
-    if constexpr (sizeof...(Args) > 0) {
-        constexpr size_t count = sizeof...(Args);
-        [&]<size_t... Idxs>(std::index_sequence<Idxs...>) {
-            auto validate = [&](size_t idx) {
-                const std::string& param_name = param_names_[idx];
-                auto it = default_values_.find(param_name);
-                if (it != default_values_.end()) {
-                    try {
-                        using ExpectedType = typename std::tuple_element<idx, std::tuple<Args...>>::type;
-                        std::ignore = std::any_cast<ExpectedType>(it->second);
-                    } catch (const std::bad_any_cast&) {
-                        throw std::runtime_error(
-                            "Default value type mismatch for parameter '" + 
-                            param_name + "'. Expected: " + param_types_[idx]
-                        );
-                    }
-                }
-            };
-            (validate(Idxs), ...);
-        }(std::make_index_sequence<count>{});
-    }
-}
-    
-    // Валидирует значения по умолчанию
+    // Упрощенная проверка значений по умолчанию (без сложных лямбд)
     void validate_defaults() {
-        if (!default_values_.empty()) {
-            validate_defaults_impl(std::make_index_sequence<sizeof...(Args)>{});
+        if (default_values_.empty()) return;
+        
+        // Проверяем каждый параметр
+        for (size_t i = 0; i < param_names_.size(); ++i) {
+            const std::string& param_name = param_names_[i];
+            auto it = default_values_.find(param_name);
+            if (it != default_values_.end()) {
+                // Проверяем тип для каждого аргумента через if constexpr
+                validate_default_for_index(i, param_name, it->second);
+            }
+        }
+    }
+    
+    // Вспомогательная функция для проверки типа по индексу
+    void validate_default_for_index(size_t idx, const std::string& param_name, const std::any& value) {
+        // Используем compile-time проверку для каждого индекса
+        if constexpr (sizeof...(Args) > 0) {
+            validate_default_for_index_impl<0>(idx, param_name, value);
+        }
+    }
+    
+    template<size_t I>
+    void validate_default_for_index_impl(size_t idx, const std::string& param_name, const std::any& value) {
+        if constexpr (I < sizeof...(Args)) {
+            if (I == idx) {
+                using ExpectedType = typename std::tuple_element<I, std::tuple<Args...>>::type;
+                try {
+                    std::ignore = std::any_cast<ExpectedType>(value);
+                } catch (const std::bad_any_cast&) {
+                    throw std::runtime_error(
+                        "Default value type mismatch for parameter '" + 
+                        param_name + "'. Expected: " + param_types_[idx]
+                    );
+                }
+            } else {
+                validate_default_for_index_impl<I + 1>(idx, param_name, value);
+            }
         }
     }
     
@@ -175,7 +187,7 @@ public:
         };
         
         initialize(defaults);
-        validate_defaults();  
+        validate_defaults();
     }
     
     // Конструктор для константных методов
@@ -214,12 +226,23 @@ public:
         
         if constexpr (sizeof...(Args) == 0) {
             // Метод без параметров
-            return method_();
+            if constexpr (std::is_void_v<ReturnType>) {
+                method_();
+                return VoidResult{};
+            } else {
+                return method_();
+            }
         } else {
             // Метод с параметрами
             auto args_tuple = make_tuple_args(arguments, 
                                              std::make_index_sequence<sizeof...(Args)>{});
-            return std::apply(method_, args_tuple);
+            
+            if constexpr (std::is_void_v<ReturnType>) {
+                std::apply(method_, args_tuple);
+                return VoidResult{};
+            } else {
+                return std::apply(method_, args_tuple);
+            }
         }
     }
     
@@ -249,4 +272,4 @@ std::unique_ptr<ICommand> create_wrapper(ClassType* instance,
         instance, method, defaults);
 }
 
-#endif 
+#endif
